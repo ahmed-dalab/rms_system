@@ -1,8 +1,8 @@
-import { connectMongo } from "@/lib/mongodb/client";
 import {
   CategoryModel,
   type CategoryDocument,
 } from "@/server/db/models/category.model";
+import { withDb } from "@/server/db/with-db";
 import type { CategoryRecord } from "@/types/category";
 
 function toCategoryRecord(doc: CategoryDocument): CategoryRecord {
@@ -27,11 +27,12 @@ export function slugifyCategoryName(name: string): string {
 }
 
 export async function listCategories(): Promise<CategoryRecord[]> {
-  await connectMongo();
-  const docs = await CategoryModel.find()
-    .sort({ sortOrder: 1, name: 1 })
-    .lean<CategoryDocument[]>();
-  return docs.map(toCategoryRecord);
+  return withDb(async () => {
+    const docs = await CategoryModel.find()
+      .sort({ sortOrder: 1, name: 1 })
+      .lean<CategoryDocument[]>();
+    return docs.map(toCategoryRecord);
+  });
 }
 
 export async function createCategory(input: {
@@ -41,9 +42,10 @@ export async function createCategory(input: {
   sortOrder: number;
   isActive: boolean;
 }): Promise<CategoryRecord> {
-  await connectMongo();
-  const doc = await CategoryModel.create(input);
-  return toCategoryRecord(doc);
+  return withDb(async () => {
+    const doc = await CategoryModel.create(input);
+    return toCategoryRecord(doc);
+  });
 }
 
 export async function updateCategory(
@@ -56,29 +58,41 @@ export async function updateCategory(
     isActive: boolean;
   }>,
 ): Promise<CategoryRecord | null> {
-  await connectMongo();
-  const doc = await CategoryModel.findByIdAndUpdate(
-    id,
-    { $set: input },
-    { new: true },
-  ).lean<CategoryDocument>();
-  return doc ? toCategoryRecord(doc) : null;
+  return withDb(async () => {
+    const doc = await CategoryModel.findByIdAndUpdate(
+      id,
+      { $set: input },
+      { new: true },
+    ).lean<CategoryDocument>();
+    return doc ? toCategoryRecord(doc) : null;
+  });
 }
 
 export async function deleteCategory(id: string): Promise<boolean> {
-  await connectMongo();
-  const result = await CategoryModel.findByIdAndDelete(id);
-  return Boolean(result);
+  return withDb(async () => {
+    const result = await CategoryModel.findByIdAndDelete(id);
+    return Boolean(result);
+  });
+}
+
+export async function findCategoryById(
+  id: string,
+): Promise<CategoryRecord | null> {
+  return withDb(async () => {
+    const doc = await CategoryModel.findById(id).lean<CategoryDocument>();
+    return doc ? toCategoryRecord(doc) : null;
+  });
 }
 
 export async function findCategoryBySlug(
   slug: string,
   excludeId?: string,
 ): Promise<CategoryRecord | null> {
-  await connectMongo();
-  const doc = await CategoryModel.findOne({
-    slug,
-    ...(excludeId ? { _id: { $ne: excludeId } } : {}),
-  }).lean<CategoryDocument>();
-  return doc ? toCategoryRecord(doc) : null;
+  return withDb(async () => {
+    const doc = await CategoryModel.findOne({
+      slug,
+      ...(excludeId ? { _id: { $ne: excludeId } } : {}),
+    }).lean<CategoryDocument>();
+    return doc ? toCategoryRecord(doc) : null;
+  });
 }

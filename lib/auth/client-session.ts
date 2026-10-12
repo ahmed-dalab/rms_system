@@ -2,7 +2,8 @@
 
 import { getFirebaseAuth } from "@/lib/firebase/client";
 
-export async function establishServerSession(): Promise<void> {
+/** Creates the session cookie and returns the user's portal path. */
+export async function establishServerSession(): Promise<string> {
   const auth = getFirebaseAuth();
   const user = auth.currentUser;
   if (!user) {
@@ -19,6 +20,9 @@ export async function establishServerSession(): Promise<void> {
   if (!response.ok) {
     throw new Error("Failed to establish server session");
   }
+
+  const body = (await response.json()) as { redirectTo?: string };
+  return body.redirectTo ?? "/";
 }
 
 export async function logoutFromServer(): Promise<void> {

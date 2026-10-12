@@ -25,6 +25,7 @@ const cached: MongooseCache = global.mongooseCache ?? {
 
 global.mongooseCache = cached;
 
+/** Low-level Mongo connection (cached). Prefer `withDb` from `@/server/db/with-db`. */
 export async function connectMongo(): Promise<typeof mongoose> {
   if (cached.conn) {
     return cached.conn;

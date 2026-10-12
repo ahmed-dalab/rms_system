@@ -12,6 +12,7 @@ import {
 import {
   menuItemFormSchema,
   menuItemIdSchema,
+  parseMenuItemImageUrl,
 } from "@/validations/menu-item.schema";
 
 const ADMIN_MENU_PATH = "/admin/menu";
@@ -50,6 +51,7 @@ export async function createMenuItemAction(
       categoryId: formData.get("categoryId"),
       sortOrder: formData.get("sortOrder") ?? 0,
       isAvailable: parseAvailability(formData),
+      imageUrl: formData.get("imageUrl") ?? "",
     });
 
     if (!parsed.success) {
@@ -71,6 +73,7 @@ export async function createMenuItemAction(
       categoryId: parsed.data.categoryId,
       sortOrder: parsed.data.sortOrder,
       isAvailable: parsed.data.isAvailable,
+      imageUrl: parseMenuItemImageUrl(formData.get("imageUrl")),
     });
 
     revalidatePath(ADMIN_MENU_PATH);
@@ -100,6 +103,7 @@ export async function updateMenuItemAction(
       categoryId: formData.get("categoryId"),
       sortOrder: formData.get("sortOrder") ?? 0,
       isAvailable: parseAvailability(formData),
+      imageUrl: formData.get("imageUrl") ?? "",
     });
 
     if (!parsed.success) {
@@ -121,6 +125,7 @@ export async function updateMenuItemAction(
       categoryId: parsed.data.categoryId,
       sortOrder: parsed.data.sortOrder,
       isAvailable: parsed.data.isAvailable,
+      imageUrl: parseMenuItemImageUrl(formData.get("imageUrl")),
     });
 
     if (!updated) {

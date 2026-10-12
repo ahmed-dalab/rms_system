@@ -1,14 +1,7 @@
-import { AppMainColumn } from "@/components/layout/app-main-column";
 import {
-  DashboardTopbar,
-  DashboardTopbarFallback,
-} from "@/components/layout/dashboard-topbar";
-import { SidebarProvider } from "@/components/layout/sidebar-provider";
-import {
-  WaiterSidebar,
-  WaiterSidebarFallback,
-} from "@/components/waiter/waiter-sidebar";
-import { APP_MAIN_PADDING_CLASS } from "@/lib/constants/layout";
+  WaiterHeader,
+  WaiterHeaderFallback,
+} from "@/components/waiter/waiter-header";
 import { requireUser } from "@/server/auth/guards";
 
 type WaiterAppLayoutProps = {
@@ -19,17 +12,10 @@ export async function WaiterAppLayout({ children }: WaiterAppLayoutProps) {
   const user = await requireUser();
 
   return (
-    <SidebarProvider>
-      <div className="min-h-svh w-full bg-background">
-        <WaiterSidebar />
-        <AppMainColumn>
-          <DashboardTopbar user={user} portalLabel="Waiter" />
-          <main className={`flex-1 overflow-y-auto ${APP_MAIN_PADDING_CLASS}`}>
-            {children}
-          </main>
-        </AppMainColumn>
-      </div>
-    </SidebarProvider>
+    <div className="flex min-h-svh w-full flex-col bg-background">
+      <WaiterHeader user={user} />
+      <main className="flex min-h-0 flex-1 flex-col">{children}</main>
+    </div>
   );
 }
 
@@ -39,14 +25,9 @@ export function WaiterAppLayoutFallback({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-svh w-full bg-background">
-      <WaiterSidebarFallback />
-      <AppMainColumn>
-        <DashboardTopbarFallback />
-        <main className={`flex-1 overflow-y-auto ${APP_MAIN_PADDING_CLASS}`}>
-          {children}
-        </main>
-      </AppMainColumn>
+    <div className="flex min-h-svh w-full flex-col bg-background">
+      <WaiterHeaderFallback />
+      <main className="flex min-h-0 flex-1 flex-col">{children}</main>
     </div>
   );
 }

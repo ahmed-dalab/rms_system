@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 import { AuthPanel } from "@/components/auth/auth-panel";
+import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,10 +37,10 @@ export function LoginForm() {
     try {
       const auth = getFirebaseAuth();
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      await establishServerSession();
+      const portalPath = await establishServerSession();
 
       const next = sanitizeNextPath(searchParams.get("next"));
-      router.push(next ?? "/");
+      router.replace(next ?? portalPath);
       router.refresh();
     } catch {
       setFormError("Invalid email or password.");
@@ -68,11 +69,9 @@ export function LoginForm() {
 
         <div className="space-y-1.5">
           <Label htmlFor="password">Password</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
-            className="h-9"
             {...register("password")}
           />
           {errors.password && (

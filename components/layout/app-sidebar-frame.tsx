@@ -23,7 +23,7 @@ export function AppSidebarFrame({
         <button
           type="button"
           aria-label="Close navigation"
-          className="fixed inset-0 z-40 bg-secondary/40 md:hidden"
+          className="fixed inset-0 z-40 cursor-pointer bg-secondary/40 md:hidden"
           onClick={() => setOpen(false)}
         />
       ) : null}
@@ -35,7 +35,7 @@ export function AppSidebarFrame({
           className,
         )}
       >
-        <div className="flex h-12 shrink-0 items-center gap-2.5 border-b border-sidebar-border px-3">
+        <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-sidebar-border px-3">
           <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
             R
           </div>

@@ -22,14 +22,14 @@ async function AdminOverviewStats() {
       <KpiStat
         label="7-day revenue"
         value={formatMoney(weekReport.paidRevenue)}
-        hint={`${weekReport.paidOrders} paid orders`}
+        hint={`${weekReport.paidOrders} completed orders`}
         href="/admin/reports"
         hrefLabel="Reports"
       />
       <KpiStat
-        label="Active orders"
+        label="Pending orders"
         value={String(activeOrders)}
-        hint="Open on the floor"
+        hint="Pending orders"
         href="/admin/orders"
         hrefLabel="View orders"
       />

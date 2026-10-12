@@ -1,11 +1,11 @@
 import { PageShell } from "@/components/layout/page-shell";
+import { APP_MAIN_PADDING_CLASS } from "@/lib/constants/layout";
 
 type WaiterPageShellProps = {
   title: string;
   description?: string;
   actions?: React.ReactNode;
   children: React.ReactNode;
-  fullWidth?: boolean;
 };
 
 export function WaiterPageShell({
@@ -13,14 +13,13 @@ export function WaiterPageShell({
   description,
   actions,
   children,
-  fullWidth,
 }: WaiterPageShellProps) {
   return (
     <PageShell
       title={title}
       description={description}
       actions={actions}
-      fullWidth={fullWidth}
+      className={APP_MAIN_PADDING_CLASS}
     >
       {children}
     </PageShell>

@@ -1,5 +1,5 @@
-import { connectMongo } from "@/lib/mongodb/client";
 import { OrderModel } from "@/server/db/models/order.model";
+import { withDb } from "@/server/db/with-db";
 import type { OrderStatus } from "@/types/order";
 import type {
   DailyRevenueStat,
@@ -31,110 +31,110 @@ function dateKey(d: Date): string {
 export async function getReportSummary(
   range: ReportRange,
 ): Promise<ReportSummary> {
-  await connectMongo();
+  return withDb(async () => {
+    const from = startDateForRange(range);
+    const createdAtFilter = from ? { createdAt: { $gte: from } } : {};
 
-  const from = startDateForRange(range);
-  const createdAtFilter = from ? { createdAt: { $gte: from } } : {};
-
-  const [orders, statusAgg, topItemsAgg, dailyAgg, activeOrders] =
-    await Promise.all([
-      OrderModel.find(createdAtFilter).lean(),
-      OrderModel.aggregate<{ _id: OrderStatus; count: number }>([
-        { $match: createdAtFilter },
-        { $group: { _id: "$status", count: { $sum: 1 } } },
-      ]),
-      OrderModel.aggregate<{
-        _id: string;
-        quantitySold: number;
-        revenue: number;
-      }>([
-        {
-          $match: {
-            ...createdAtFilter,
-            status: "paid",
+    const [orders, statusAgg, topItemsAgg, dailyAgg, activeOrders] =
+      await Promise.all([
+        OrderModel.find(createdAtFilter).lean(),
+        OrderModel.aggregate<{ _id: OrderStatus; count: number }>([
+          { $match: createdAtFilter },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]),
+        OrderModel.aggregate<{
+          _id: string;
+          quantitySold: number;
+          revenue: number;
+        }>([
+          {
+            $match: {
+              ...createdAtFilter,
+              status: "paid",
+            },
           },
-        },
-        { $unwind: "$items" },
-        {
-          $group: {
-            _id: "$items.name",
-            quantitySold: { $sum: "$items.quantity" },
-            revenue: {
-              $sum: {
-                $multiply: ["$items.price", "$items.quantity"],
+          { $unwind: "$items" },
+          {
+            $group: {
+              _id: "$items.name",
+              quantitySold: { $sum: "$items.quantity" },
+              revenue: {
+                $sum: {
+                  $multiply: ["$items.price", "$items.quantity"],
+                },
               },
             },
           },
-        },
-        { $sort: { quantitySold: -1 } },
-        { $limit: 8 },
-      ]),
-      OrderModel.aggregate<{
-        _id: string;
-        revenue: number;
-        orderCount: number;
-      }>([
-        {
-          $match: {
-            ...createdAtFilter,
-            status: "paid",
-          },
-        },
-        {
-          $group: {
-            _id: {
-              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+          { $sort: { quantitySold: -1 } },
+          { $limit: 8 },
+        ]),
+        OrderModel.aggregate<{
+          _id: string;
+          revenue: number;
+          orderCount: number;
+        }>([
+          {
+            $match: {
+              ...createdAtFilter,
+              status: "paid",
             },
-            revenue: { $sum: "$subtotal" },
-            orderCount: { $sum: 1 },
           },
-        },
-        { $sort: { _id: 1 } },
-      ]),
-      OrderModel.countDocuments({
-        status: { $nin: ["paid", "cancelled"] },
-      }),
-    ]);
+          {
+            $group: {
+              _id: {
+                $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+              },
+              revenue: { $sum: "$subtotal" },
+              orderCount: { $sum: 1 },
+            },
+          },
+          { $sort: { _id: 1 } },
+        ]),
+        OrderModel.countDocuments({
+          status: { $nin: ["paid", "cancelled"] },
+        }),
+      ]);
 
-  const paidOrders = orders.filter((o) => o.status === "paid");
-  const cancelledOrders = orders.filter((o) => o.status === "cancelled");
-  const paidRevenue = paidOrders.reduce((sum, o) => sum + o.subtotal, 0);
-  const averagePaidTicket =
-    paidOrders.length > 0 ? paidRevenue / paidOrders.length : 0;
+    const paidOrders = orders.filter((o) => o.status === "paid");
+    const cancelledOrders = orders.filter((o) => o.status === "cancelled");
+    const paidRevenue = paidOrders.reduce((sum, o) => sum + o.subtotal, 0);
+    const averagePaidTicket =
+      paidOrders.length > 0 ? paidRevenue / paidOrders.length : 0;
 
-  const statusBreakdown: StatusCount[] = statusAgg.map((row) => ({
-    status: row._id,
-    count: row.count,
-  }));
+    const statusBreakdown: StatusCount[] = statusAgg.map((row) => ({
+      status: row._id,
+      count: row.count,
+    }));
 
-  const topItems: TopMenuItemStat[] = topItemsAgg.map((row) => ({
-    name: row._id,
-    quantitySold: row.quantitySold,
-    revenue: row.revenue,
-  }));
+    const topItems: TopMenuItemStat[] = topItemsAgg.map((row) => ({
+      name: row._id,
+      quantitySold: row.quantitySold,
+      revenue: row.revenue,
+    }));
 
-  const dailyRevenue: DailyRevenueStat[] = dailyAgg.map((row) => ({
-    date: row._id,
-    revenue: row.revenue,
-    orderCount: row.orderCount,
-  }));
+    const dailyRevenue: DailyRevenueStat[] = dailyAgg.map((row) => ({
+      date: row._id,
+      revenue: row.revenue,
+      orderCount: row.orderCount,
+    }));
 
-  if (range === "7d" || range === "today") {
-    fillDailyGaps(dailyRevenue, range === "today" ? 1 : 7);
-  }
+    if (range === "7d" || range === "today") {
+      fillDailyGaps(dailyRevenue, range === "today" ? 1 : 7);
+    }
 
-  return {
-    range,
-    totalOrders: orders.length,
-    paidOrders: paidOrders.length,
-    cancelledOrders: cancelledOrders.length,
-    activeOrders,
-    paidRevenue,
-    averagePaidTicket,
-    statusBreakdown,
-    topItems,
-    dailyRevenue,
-  };
+    return {
+      range,
+      totalOrders: orders.length,
+      paidOrders: paidOrders.length,
+      cancelledOrders: cancelledOrders.length,
+      activeOrders,
+      paidRevenue,
+      averagePaidTicket,
+      statusBreakdown,
+      topItems,
+      dailyRevenue,
+    };
+  });
 }
 
 function fillDailyGaps(stats: DailyRevenueStat[], dayCount: number) {

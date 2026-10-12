@@ -123,7 +123,7 @@ export async function createOrderAction(
 
     return {
       ok: true,
-      message: "Order placed",
+      message: "Order taken",
       orderId: order.id,
     };
   } catch {

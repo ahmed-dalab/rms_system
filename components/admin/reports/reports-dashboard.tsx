@@ -29,14 +29,14 @@ export function ReportsDashboard({ summary }: { summary: ReportSummary }) {
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiStat
-          label="Paid revenue"
+          label="Revenue"
           value={formatMoney(summary.paidRevenue)}
-          hint={`${summary.paidOrders} paid orders`}
+          hint={`${summary.paidOrders} completed orders`}
         />
         <KpiStat
           label="Avg. ticket"
           value={formatMoney(summary.averagePaidTicket)}
-          hint="Paid orders only"
+          hint="Completed orders only"
         />
         <KpiStat
           label="Total orders"
@@ -46,7 +46,7 @@ export function ReportsDashboard({ summary }: { summary: ReportSummary }) {
         <KpiStat
           label="Active now"
           value={String(summary.activeOrders)}
-          hint="Open on the floor"
+          hint="Pending orders"
         />
       </div>
 

@@ -16,3 +16,6 @@ export const updateWaiterSchema = z.object({
   email: z.string().email("Enter a valid email"),
   password: z.string().optional(),
 });
+
+export type CreateWaiterInput = z.infer<typeof createWaiterSchema>;
+export type UpdateWaiterInput = z.infer<typeof updateWaiterSchema>;

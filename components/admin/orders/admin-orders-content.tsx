@@ -11,7 +11,7 @@ const OrdersFilter = dynamic(
     import("@/components/orders/orders-filter.client").then(
       (mod) => mod.OrdersFilter,
     ),
-  { loading: () => <Skeleton className="h-9 w-40" /> },
+  { loading: () => <Skeleton className="h-10 w-36" /> },
 );
 
 type AdminOrdersContentProps = {
@@ -28,13 +28,13 @@ export async function AdminOrdersContent({
     <AdminPageShell
       title="Orders"
       description="Monitor floor activity and update order status."
-    >
-      <div className="space-y-4">
-        <Suspense fallback={<Skeleton className="h-9 w-40" />}>
+      actions={
+        <Suspense fallback={<Skeleton className="h-10 w-36" />}>
           <OrdersFilter />
         </Suspense>
-        <OrdersList orders={orders} detailBasePath="/admin/orders" />
-      </div>
+      }
+    >
+      <OrdersList orders={orders} detailBasePath="/admin/orders" />
     </AdminPageShell>
   );
 }

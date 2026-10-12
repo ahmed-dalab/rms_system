@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 
 import { CategorySelect } from "@/components/admin/category-select";
+import { MenuItemImageField } from "@/components/admin/menu/menu-item-image-field.client";
 import {
   DataTable,
   DataTableBody,
@@ -97,6 +98,7 @@ export function MenuItemManager({ items, categories }: MenuItemManagerProps) {
       ) : (
         <DataTable>
           <DataTableHead>
+            <DataTableHeaderCell>Photo</DataTableHeaderCell>
             <DataTableHeaderCell>Item</DataTableHeaderCell>
             <DataTableHeaderCell>Category</DataTableHeaderCell>
             <DataTableHeaderCell align="right">Price</DataTableHeaderCell>
@@ -124,6 +126,7 @@ export function MenuItemManager({ items, categories }: MenuItemManagerProps) {
       >
         <form action={createFormAction} className="space-y-4">
           <MenuItemFormFields
+            key={createOpen ? "create-open" : "create-closed"}
             idPrefix="create"
             categories={categories}
             categoryId={createCategoryId}
@@ -165,6 +168,20 @@ function MenuItemRow({
 
   return (
     <DataTableRow>
+      <DataTableCell className="w-14">
+        {item.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={item.imageUrl}
+            alt=""
+            className="size-11 rounded-md border border-border object-cover"
+          />
+        ) : (
+          <span className="flex size-11 items-center justify-center rounded-md border border-dashed border-border bg-muted text-[10px] text-muted-foreground">
+            —
+          </span>
+        )}
+      </DataTableCell>
       <DataTableCell>
         <p className="font-medium">{item.name}</p>
         {item.description ? (
@@ -285,6 +302,11 @@ function MenuItemFormFields({
 }) {
   return (
     <>
+      <MenuItemImageField
+        idPrefix={idPrefix}
+        defaultUrl={defaults?.imageUrl}
+        disabled={disabled}
+      />
       <div className="space-y-2">
         <Label htmlFor={`${idPrefix}-name`}>Name</Label>
         <Input

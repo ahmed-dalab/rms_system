@@ -10,8 +10,9 @@ import type { SessionUser } from "@/types/user";
 
 export async function createSessionFromIdToken(
   idToken: string,
-): Promise<void> {
+): Promise<SessionUser | null> {
   const adminAuth = getFirebaseAdminAuth();
+  const decoded = await adminAuth.verifyIdToken(idToken);
   const sessionCookie = await adminAuth.createSessionCookie(idToken, {
     expiresIn: SESSION_MAX_AGE_MS,
   });
@@ -24,6 +25,8 @@ export async function createSessionFromIdToken(
     path: "/",
     maxAge: Math.floor(SESSION_MAX_AGE_MS / 1000),
   });
+
+  return findUserByFirebaseUid(decoded.uid);
 }
 
 export async function destroySession(): Promise<void> {

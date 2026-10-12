@@ -11,7 +11,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
   if (data.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        No paid orders in this period.
+        No completed orders in this period.
       </p>
     );
   }

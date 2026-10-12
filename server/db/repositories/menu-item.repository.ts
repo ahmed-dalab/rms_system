@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
 
-import { connectMongo } from "@/lib/mongodb/client";
 import {
   MenuItemModel,
   type MenuItemDocument,
 } from "@/server/db/models/menu-item.model";
 import { CategoryModel } from "@/server/db/models/category.model";
+import { withDb } from "@/server/db/with-db";
 import type { MenuItemRecord } from "@/types/menu-item";
 
 type PopulatedMenuItem = MenuItemDocument & {
@@ -27,46 +27,55 @@ function toMenuItemRecord(doc: PopulatedMenuItem): MenuItemRecord {
     categoryName: category?.name ?? "Unknown",
     sortOrder: doc.sortOrder ?? 0,
     isAvailable: doc.isAvailable ?? true,
+    imageUrl: doc.imageUrl ?? null,
     createdAt: new Date(doc.createdAt).toISOString(),
     updatedAt: new Date(doc.updatedAt).toISOString(),
   };
 }
 
+const categoryPopulate = {
+  path: "categoryId" as const,
+  select: "name",
+  model: CategoryModel,
+};
+
 export async function listAvailableMenuItems(): Promise<MenuItemRecord[]> {
-  await connectMongo();
-  const docs = await MenuItemModel.find({ isAvailable: true })
-    .populate({ path: "categoryId", select: "name", model: CategoryModel })
-    .sort({ sortOrder: 1, name: 1 })
-    .lean<PopulatedMenuItem[]>();
-  return docs.map(toMenuItemRecord);
+  return withDb(async () => {
+    const docs = await MenuItemModel.find({ isAvailable: true })
+      .populate(categoryPopulate)
+      .sort({ sortOrder: 1, name: 1 })
+      .lean<PopulatedMenuItem[]>();
+    return docs.map(toMenuItemRecord);
+  });
 }
 
 export async function findMenuItemsByIds(
   ids: string[],
 ): Promise<MenuItemRecord[]> {
-  await connectMongo();
-  const objectIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
-  const docs = await MenuItemModel.find({
-    _id: { $in: objectIds },
-    isAvailable: true,
-  })
-    .populate({ path: "categoryId", select: "name", model: CategoryModel })
-    .lean<PopulatedMenuItem[]>();
-  return docs.map(toMenuItemRecord);
+  return withDb(async () => {
+    const objectIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+    const docs = await MenuItemModel.find({
+      _id: { $in: objectIds },
+      isAvailable: true,
+    })
+      .populate(categoryPopulate)
+      .lean<PopulatedMenuItem[]>();
+    return docs.map(toMenuItemRecord);
+  });
 }
 
 export async function listMenuItems(): Promise<MenuItemRecord[]> {
-  await connectMongo();
-  const docs = await MenuItemModel.find()
-    .populate({ path: "categoryId", select: "name", model: CategoryModel })
-    .sort({ sortOrder: 1, name: 1 })
-    .lean<PopulatedMenuItem[]>();
-  return docs.map(toMenuItemRecord);
+  return withDb(async () => {
+    const docs = await MenuItemModel.find()
+      .populate(categoryPopulate)
+      .sort({ sortOrder: 1, name: 1 })
+      .lean<PopulatedMenuItem[]>();
+    return docs.map(toMenuItemRecord);
+  });
 }
 
 export async function countMenuItems(): Promise<number> {
-  await connectMongo();
-  return MenuItemModel.countDocuments();
+  return withDb(() => MenuItemModel.countDocuments());
 }
 
 export async function createMenuItem(input: {
@@ -76,23 +85,26 @@ export async function createMenuItem(input: {
   categoryId: string;
   sortOrder: number;
   isAvailable: boolean;
+  imageUrl: string | null;
 }): Promise<MenuItemRecord> {
-  await connectMongo();
-  const doc = await MenuItemModel.create({
-    name: input.name,
-    description: input.description,
-    price: input.price,
-    categoryId: input.categoryId,
-    sortOrder: input.sortOrder,
-    isAvailable: input.isAvailable,
+  return withDb(async () => {
+    const doc = await MenuItemModel.create({
+      name: input.name,
+      description: input.description,
+      price: input.price,
+      categoryId: input.categoryId,
+      sortOrder: input.sortOrder,
+      isAvailable: input.isAvailable,
+      imageUrl: input.imageUrl,
+    });
+    const populated = await MenuItemModel.findById(doc._id)
+      .populate(categoryPopulate)
+      .lean<PopulatedMenuItem>();
+    if (!populated) {
+      throw new Error("Failed to load created menu item");
+    }
+    return toMenuItemRecord(populated);
   });
-  const populated = await MenuItemModel.findById(doc._id)
-    .populate({ path: "categoryId", select: "name", model: CategoryModel })
-    .lean<PopulatedMenuItem>();
-  if (!populated) {
-    throw new Error("Failed to load created menu item");
-  }
-  return toMenuItemRecord(populated);
 }
 
 export async function updateMenuItem(
@@ -104,27 +116,42 @@ export async function updateMenuItem(
     categoryId: string;
     sortOrder: number;
     isAvailable: boolean;
+    imageUrl: string | null;
   }>,
 ): Promise<MenuItemRecord | null> {
-  await connectMongo();
-  await MenuItemModel.findByIdAndUpdate(id, { $set: input });
-  const doc = await MenuItemModel.findById(id)
-    .populate({ path: "categoryId", select: "name", model: CategoryModel })
-    .lean<PopulatedMenuItem>();
-  return doc ? toMenuItemRecord(doc) : null;
+  return withDb(async () => {
+    await MenuItemModel.findByIdAndUpdate(id, { $set: input });
+    const doc = await MenuItemModel.findById(id)
+      .populate(categoryPopulate)
+      .lean<PopulatedMenuItem>();
+    return doc ? toMenuItemRecord(doc) : null;
+  });
+}
+
+export async function findMenuItemById(
+  id: string,
+): Promise<MenuItemRecord | null> {
+  return withDb(async () => {
+    const doc = await MenuItemModel.findById(id)
+      .populate(categoryPopulate)
+      .lean<PopulatedMenuItem>();
+    return doc ? toMenuItemRecord(doc) : null;
+  });
 }
 
 export async function deleteMenuItem(id: string): Promise<boolean> {
-  await connectMongo();
-  const result = await MenuItemModel.findByIdAndDelete(id);
-  return Boolean(result);
+  return withDb(async () => {
+    const result = await MenuItemModel.findByIdAndDelete(id);
+    return Boolean(result);
+  });
 }
 
 export async function categoryExists(categoryId: string): Promise<boolean> {
-  await connectMongo();
-  if (!mongoose.Types.ObjectId.isValid(categoryId)) {
-    return false;
-  }
-  const count = await CategoryModel.countDocuments({ _id: categoryId });
-  return count > 0;
+  return withDb(async () => {
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return false;
+    }
+    const count = await CategoryModel.countDocuments({ _id: categoryId });
+    return count > 0;
+  });
 }

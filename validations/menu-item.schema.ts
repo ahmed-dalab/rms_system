@@ -15,7 +15,21 @@ export const menuItemFormSchema = z.object({
   categoryId: z.string().min(1, "Select a category"),
   sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
   isAvailable: z.coerce.boolean().default(true),
+  imageUrl: z
+    .string()
+    .trim()
+    .url("Enter a valid image URL")
+    .optional()
+    .or(z.literal("")),
 });
+
+export function parseMenuItemImageUrl(raw: FormDataEntryValue | null): string | null {
+  if (typeof raw !== "string") {
+    return null;
+  }
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
 
 export type MenuItemFormInput = z.infer<typeof menuItemFormSchema>;
 

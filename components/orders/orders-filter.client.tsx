@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
-import { PageToolbar } from "@/components/layout/page-toolbar";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type OrdersFilterProps = {
-  showPosLink?: boolean;
+  activeLabel?: string;
+  allLabel?: string;
 };
 
-export function OrdersFilter({ showPosLink }: OrdersFilterProps) {
+export function OrdersFilter({
+  activeLabel = "Active",
+  allLabel = "All",
+}: OrdersFilterProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const current = searchParams.get("filter") === "all" ? "all" : "active";
@@ -26,29 +29,35 @@ export function OrdersFilter({ showPosLink }: OrdersFilterProps) {
     return q ? `${pathname}?${q}` : pathname;
   }
 
+  const options = [
+    { value: "active" as const, label: activeLabel },
+    { value: "all" as const, label: allLabel },
+  ];
+
   return (
-    <PageToolbar>
-      <div className="flex gap-1.5">
-        <Button
-          asChild
-          size="sm"
-          variant={current === "active" ? "default" : "outline"}
-        >
-          <Link href={hrefFor("active")}>Active</Link>
-        </Button>
-        <Button
-          asChild
-          size="sm"
-          variant={current === "all" ? "default" : "outline"}
-        >
-          <Link href={hrefFor("all")}>All</Link>
-        </Button>
-      </div>
-      {showPosLink ? (
-        <Button asChild size="sm">
-          <Link href="/waiter/pos">Open POS</Link>
-        </Button>
-      ) : null}
-    </PageToolbar>
+    <div
+      role="tablist"
+      className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1"
+    >
+      {options.map((option) => {
+        const selected = current === option.value;
+        return (
+          <Link
+            key={option.value}
+            href={hrefFor(option.value)}
+            role="tab"
+            aria-selected={selected}
+            className={cn(
+              "flex h-8 items-center rounded-md px-3.5 text-sm font-medium transition-colors",
+              selected
+                ? "bg-secondary text-secondary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {option.label}
+          </Link>
+        );
+      })}
+    </div>
   );
 }

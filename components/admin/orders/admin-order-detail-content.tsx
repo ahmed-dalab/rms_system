@@ -20,7 +20,10 @@ export async function AdminOrderDetailContent({ orderId }: { orderId: string }) 
   }
 
   return (
-    <AdminPageShell title={`Order · ${order.tableLabel}`}>
+    <AdminPageShell
+      title={`Table ${order.tableLabel}`}
+      description={`Order placed ${new Date(order.createdAt).toLocaleString()}`}
+    >
       <OrderDetailPanel
         order={order}
         backHref="/admin/orders"

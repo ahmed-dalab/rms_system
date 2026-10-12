@@ -5,11 +5,19 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signOut } from "firebase/auth";
 
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/components/ui/button";
 import { logoutFromServer } from "@/lib/auth/client-session";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 
-export function LogoutButton() {
+type LogoutButtonProps = {
+  variant?: ButtonProps["variant"];
+  className?: string;
+};
+
+export function LogoutButton({
+  variant = "outline",
+  className,
+}: LogoutButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -28,13 +36,15 @@ export function LogoutButton() {
   return (
     <Button
       type="button"
-      variant="outline"
+      variant={variant}
       size="sm"
+      className={className}
       onClick={handleLogout}
       disabled={loading}
+      aria-label="Sign out"
     >
       <LogOut />
-      Sign out
+      <span className="hidden sm:inline">Sign out</span>
     </Button>
   );
 }

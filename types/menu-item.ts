@@ -7,6 +7,7 @@ export type MenuItemRecord = {
   categoryName: string;
   sortOrder: number;
   isAvailable: boolean;
+  imageUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };

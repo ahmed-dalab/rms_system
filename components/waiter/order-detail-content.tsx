@@ -26,7 +26,10 @@ export async function OrderDetailContent({ orderId }: OrderDetailContentProps) {
   }
 
   return (
-    <WaiterPageShell title={`Order · ${order.tableLabel}`}>
+    <WaiterPageShell
+      title={`Table ${order.tableLabel}`}
+      description={`Order placed ${new Date(order.createdAt).toLocaleString()}`}
+    >
       <OrderDetailPanel
         order={order}
         backHref="/waiter/orders"

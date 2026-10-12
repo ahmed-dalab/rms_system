@@ -1,25 +1,20 @@
 import { Badge } from "@/components/ui/badge";
+import { ORDER_STATUS_LABEL } from "@/lib/constants/order-flow";
 import type { OrderStatus } from "@/types/order";
-
-const labels: Record<OrderStatus, string> = {
-  pending: "Pending",
-  preparing: "Preparing",
-  served: "Served",
-  paid: "Paid",
-  cancelled: "Cancelled",
-};
 
 const variants: Record<
   OrderStatus,
   "default" | "secondary" | "muted" | "outline"
 > = {
-  pending: "secondary",
+  pending: "default",
   preparing: "default",
-  served: "outline",
-  paid: "muted",
+  served: "default",
+  paid: "secondary",
   cancelled: "muted",
 };
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  return <Badge variant={variants[status]}>{labels[status]}</Badge>;
+  return (
+    <Badge variant={variants[status]}>{ORDER_STATUS_LABEL[status]}</Badge>
+  );
 }

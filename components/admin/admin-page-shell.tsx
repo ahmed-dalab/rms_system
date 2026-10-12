@@ -5,7 +5,6 @@ type AdminPageShellProps = {
   description?: string;
   actions?: React.ReactNode;
   children: React.ReactNode;
-  fullWidth?: boolean;
 };
 
 export function AdminPageShell({
@@ -13,14 +12,12 @@ export function AdminPageShell({
   description,
   actions,
   children,
-  fullWidth,
 }: AdminPageShellProps) {
   return (
     <PageShell
       title={title}
       description={description}
       actions={actions}
-      fullWidth={fullWidth}
     >
       {children}
     </PageShell>

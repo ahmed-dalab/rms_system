@@ -9,6 +9,7 @@ import { Controller, useForm } from "react-hook-form";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 
 import { AuthPanel } from "@/components/auth/auth-panel";
+import { PasswordInput } from "@/components/auth/password-input";
 import { RoleSelect } from "@/components/auth/role-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,8 +75,8 @@ export function RegisterForm({ allowAdminRegister = false }: RegisterFormProps) 
         throw new Error("Failed to save user profile");
       }
 
-      await establishServerSession();
-      router.push("/");
+      const portalPath = await establishServerSession();
+      router.replace(portalPath);
       router.refresh();
     } catch {
       setFormError("Could not create account. Email may already be in use.");
@@ -144,11 +145,9 @@ export function RegisterForm({ allowAdminRegister = false }: RegisterFormProps) 
 
         <div className="space-y-1.5">
           <Label htmlFor="password">Password</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="new-password"
-            className="h-9"
             {...register("password")}
           />
           {errors.password && (
@@ -158,11 +157,9 @@ export function RegisterForm({ allowAdminRegister = false }: RegisterFormProps) 
 
         <div className="space-y-1.5">
           <Label htmlFor="confirmPassword">Confirm password</Label>
-          <Input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             autoComplete="new-password"
-            className="h-9"
             {...register("confirmPassword")}
           />
           {errors.confirmPassword && (

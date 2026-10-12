@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
 
-import { connectMongo } from "@/lib/mongodb/client";
 import {
   OrderModel,
   type OrderDocument,
 } from "@/server/db/models/order.model";
 import { TableModel } from "@/server/db/models/table.model";
 import { UserModel } from "@/server/db/models/user.model";
+import { withDb } from "@/server/db/with-db";
 import type {
   OrderLineItemRecord,
   OrderRecord,
@@ -58,26 +58,28 @@ const populateConfig = [
 export async function listOrders(options?: {
   activeOnly?: boolean;
 }): Promise<OrderRecord[]> {
-  await connectMongo();
-  const filter =
-    options?.activeOnly === true
-      ? { status: { $nin: ["paid", "cancelled"] as OrderStatus[] } }
-      : {};
+  return withDb(async () => {
+    const filter =
+      options?.activeOnly === true
+        ? { status: { $nin: ["paid", "cancelled"] as OrderStatus[] } }
+        : {};
 
-  const docs = await OrderModel.find(filter)
-    .populate(populateConfig)
-    .sort({ createdAt: -1 })
-    .lean<PopulatedOrder[]>();
+    const docs = await OrderModel.find(filter)
+      .populate(populateConfig)
+      .sort({ createdAt: -1 })
+      .lean<PopulatedOrder[]>();
 
-  return docs.map(toOrderRecord);
+    return docs.map(toOrderRecord);
+  });
 }
 
 export async function findOrderById(id: string): Promise<OrderRecord | null> {
-  await connectMongo();
-  const doc = await OrderModel.findById(id)
-    .populate(populateConfig)
-    .lean<PopulatedOrder>();
-  return doc ? toOrderRecord(doc) : null;
+  return withDb(async () => {
+    const doc = await OrderModel.findById(id)
+      .populate(populateConfig)
+      .lean<PopulatedOrder>();
+    return doc ? toOrderRecord(doc) : null;
+  });
 }
 
 export async function createOrder(input: {
@@ -87,43 +89,49 @@ export async function createOrder(input: {
   subtotal: number;
   notes: string | null;
 }): Promise<OrderRecord> {
-  await connectMongo();
-  const doc = await OrderModel.create({
-    tableId: input.tableId,
-    waiterId: input.waiterId,
-    status: "pending",
-    items: input.items.map((line) => ({
-      menuItemId: line.menuItemId,
-      name: line.name,
-      price: line.price,
-      quantity: line.quantity,
-    })),
-    subtotal: input.subtotal,
-    notes: input.notes,
+  return withDb(async () => {
+    const doc = await OrderModel.create({
+      tableId: input.tableId,
+      waiterId: input.waiterId,
+      status: "pending",
+      items: input.items.map((line) => ({
+        menuItemId: line.menuItemId,
+        name: line.name,
+        price: line.price,
+        quantity: line.quantity,
+      })),
+      subtotal: input.subtotal,
+      notes: input.notes,
+    });
+
+    const populated = await OrderModel.findById(doc._id)
+      .populate(populateConfig)
+      .lean<PopulatedOrder>();
+
+    if (!populated) {
+      throw new Error("Failed to load created order");
+    }
+    return toOrderRecord(populated);
   });
-
-  const populated = await OrderModel.findById(doc._id)
-    .populate(populateConfig)
-    .lean<PopulatedOrder>();
-
-  if (!populated) {
-    throw new Error("Failed to load created order");
-  }
-  return toOrderRecord(populated);
 }
 
 export async function updateOrderStatus(
   id: string,
   status: OrderStatus,
 ): Promise<OrderRecord | null> {
-  await connectMongo();
-  await OrderModel.findByIdAndUpdate(id, { $set: { status } });
-  return findOrderById(id);
+  return withDb(async () => {
+    await OrderModel.findByIdAndUpdate(id, { $set: { status } });
+    const doc = await OrderModel.findById(id)
+      .populate(populateConfig)
+      .lean<PopulatedOrder>();
+    return doc ? toOrderRecord(doc) : null;
+  });
 }
 
 export async function countActiveOrders(): Promise<number> {
-  await connectMongo();
-  return OrderModel.countDocuments({
-    status: { $nin: ["paid", "cancelled"] },
-  });
+  return withDb(() =>
+    OrderModel.countDocuments({
+      status: { $nin: ["paid", "cancelled"] },
+    }),
+  );
 }

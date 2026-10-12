@@ -31,6 +31,11 @@ const menuItemSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    imageUrl: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
   { timestamps: true },
 );

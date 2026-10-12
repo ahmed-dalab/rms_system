@@ -1,17 +1,22 @@
 "use client";
 
 import {
+  CheckCircle2,
   Loader2,
   Minus,
   Plus,
+  ReceiptText,
   RotateCcw,
   Search,
   Send,
-  Trash2,
+  Users,
+  UtensilsCrossed,
+  X,
 } from "lucide-react";
 import Link from "next/link";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 
+import { EmptyState } from "@/components/layout/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,15 +34,21 @@ const initialState: OrderActionState = { ok: false, message: "" };
 type PosTerminalProps = {
   tables: TableRecord[];
   menuItems: MenuItemRecord[];
+  busyTableIds: string[];
 };
 
-export function PosTerminal({ tables, menuItems }: PosTerminalProps) {
+export function PosTerminal({
+  tables,
+  menuItems,
+  busyTableIds,
+}: PosTerminalProps) {
   const [state, formAction, pending] = useActionState(
     createOrderAction,
     initialState,
   );
+  const busy = useMemo(() => new Set(busyTableIds), [busyTableIds]);
   const [tableId, setTableId] = useState<string | null>(
-    tables[0]?.id ?? null,
+    () => (tables.find((t) => !busy.has(t.id)) ?? tables[0])?.id ?? null,
   );
   const [cart, setCart] = useState<Record<string, number>>({});
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -64,11 +75,13 @@ export function PosTerminal({ tables, menuItems }: PosTerminalProps) {
     });
   }, [menuItems, activeCategory, search]);
 
-  const cartLines = useMemo(() => {
-    return menuItems
-      .map((item) => ({ item, qty: cart[item.id] ?? 0 }))
-      .filter((line) => line.qty > 0);
-  }, [cart, menuItems]);
+  const cartLines = useMemo(
+    () =>
+      menuItems
+        .map((item) => ({ item, qty: cart[item.id] ?? 0 }))
+        .filter((line) => line.qty > 0),
+    [cart, menuItems],
+  );
 
   const itemsPayload = useMemo(
     () =>
@@ -79,32 +92,21 @@ export function PosTerminal({ tables, menuItems }: PosTerminalProps) {
     [cartLines],
   );
 
-  const subtotal = useMemo(
-    () =>
-      cartLines.reduce(
-        (sum, line) => sum + line.item.price * line.qty,
-        0,
-      ),
-    [cartLines],
+  const subtotal = cartLines.reduce(
+    (sum, line) => sum + line.item.price * line.qty,
+    0,
   );
+  const itemCount = cartLines.reduce((sum, line) => sum + line.qty, 0);
 
-  const itemCount = useMemo(
-    () => cartLines.reduce((sum, line) => sum + line.qty, 0),
-    [cartLines],
-  );
-
-  useEffect(() => {
-    if (state.ok && state.orderId) {
-      setLastOrderId(state.orderId);
-      setCart({});
-    }
-  }, [state.ok, state.orderId]);
+  if (state.ok && state.orderId && state.orderId !== lastOrderId) {
+    setLastOrderId(state.orderId);
+    setCart({});
+  }
 
   function adjustQty(menuItemId: string, delta: number) {
     setCart((prev) => {
       const next = { ...prev };
-      const current = next[menuItemId] ?? 0;
-      const value = Math.max(0, Math.min(99, current + delta));
+      const value = Math.max(0, Math.min(99, (next[menuItemId] ?? 0) + delta));
       if (value === 0) {
         delete next[menuItemId];
       } else {
@@ -114,149 +116,223 @@ export function PosTerminal({ tables, menuItems }: PosTerminalProps) {
     });
   }
 
-  function addOne(menuItemId: string) {
-    adjustQty(menuItemId, 1);
-  }
-
-  function clearCart() {
-    setCart({});
-  }
-
   if (tables.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-        No tables configured. Ask an admin to add tables.
+      <div className="flex flex-1 items-center justify-center p-6">
+        <EmptyState
+          icon={Users}
+          title="No tables configured"
+          description="Ask an admin to add tables before taking orders."
+        />
       </div>
     );
   }
 
   if (menuItems.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-        No menu items available. Ask an admin to add menu items.
+      <div className="flex flex-1 items-center justify-center p-6">
+        <EmptyState
+          icon={UtensilsCrossed}
+          title="No menu items available"
+          description="Ask an admin to add or enable menu items."
+        />
       </div>
     );
   }
 
+  const canSend = !pending && itemCount > 0 && Boolean(tableId);
+
   return (
     <form
       action={formAction}
-      className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[11rem_minmax(0,1fr)_minmax(280px,320px)] lg:grid-rows-1"
+      className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[13rem_minmax(0,1fr)_22rem]"
     >
       <input type="hidden" name="items" value={JSON.stringify(itemsPayload)} />
       <input type="hidden" name="tableId" value={tableId ?? ""} />
 
-      {/* Tables */}
-      <aside className="shrink-0 border-b border-border bg-card lg:border-b-0 lg:border-r">
-        <div className="border-b border-border px-3 py-2">
+      <aside className="flex shrink-0 flex-col border-b border-border bg-card lg:min-h-0 lg:border-b-0 lg:border-r">
+        <div className="flex items-center justify-between px-4 pt-3 pb-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Table
+            Tables
           </p>
-          <p className="truncate text-sm font-medium">
-            {selectedTable?.label ?? "Select"}
-          </p>
+          <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <span className="size-2 rounded-full bg-primary" />
+            Open order
+          </span>
         </div>
-        <div className="grid max-h-32 grid-cols-4 gap-1.5 overflow-y-auto p-2 lg:max-h-none lg:grid-cols-2 lg:content-start">
-          {tables.map((table) => (
-            <button
-              key={table.id}
-              type="button"
-              onClick={() => setTableId(table.id)}
-              className={cn(
-                "rounded-md border px-2 py-2 text-center text-xs font-medium transition-colors sm:text-sm",
-                tableId === table.id
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background hover:border-primary/40 hover:bg-muted/50",
-              )}
-            >
-              {table.label}
-            </button>
-          ))}
+        <div className="flex gap-2 overflow-x-auto px-3 pb-3 lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-2 lg:content-start lg:overflow-y-auto">
+          {tables.map((table) => {
+            const selected = tableId === table.id;
+            const isBusy = busy.has(table.id);
+            return (
+              <button
+                key={table.id}
+                type="button"
+                onClick={() => setTableId(table.id)}
+                aria-pressed={selected}
+                className={cn(
+                  "relative flex min-w-[4.75rem] shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2.5 transition-colors",
+                  selected
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                    : "border-border bg-background hover:border-primary/50 hover:bg-accent/40",
+                )}
+              >
+                <span className="text-sm font-semibold">{table.label}</span>
+                <span
+                  className={cn(
+                    "mt-0.5 flex items-center gap-1 text-[11px]",
+                    selected
+                      ? "text-primary-foreground/80"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  <Users className="size-3" />
+                  {table.capacity}
+                </span>
+                {isBusy ? (
+                  <span
+                    className={cn(
+                      "absolute right-1.5 top-1.5 size-2 rounded-full",
+                      selected ? "bg-primary-foreground" : "bg-primary",
+                    )}
+                    title="Has an open order"
+                  />
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       </aside>
 
-      {/* Menu */}
-      <section className="flex min-h-0 min-w-0 flex-1 flex-col border-b border-border lg:border-b-0 lg:border-r">
-        <div className="shrink-0 space-y-2 border-b border-border px-3 py-2.5">
+      <section className="flex min-w-0 flex-col lg:min-h-0">
+        <div className="sticky top-14 z-10 space-y-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur lg:static">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search menu…"
-              className="h-9 pl-8"
+              className="h-10 bg-card pl-9 pr-9"
             />
+            {search ? (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                aria-label="Clear search"
+              >
+                <X className="size-4" />
+              </button>
+            ) : null}
           </div>
-          <div className="flex gap-1 overflow-x-auto pb-0.5">
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5">
             {categories.map((cat) => (
-              <Button
+              <button
                 key={cat}
                 type="button"
-                size="sm"
-                variant={activeCategory === cat ? "default" : "outline"}
-                className="h-8 shrink-0 px-2.5 text-xs capitalize"
                 onClick={() => setActiveCategory(cat)}
+                className={cn(
+                  "h-8 shrink-0 cursor-pointer rounded-full border px-3.5 text-xs font-medium capitalize transition-colors",
+                  activeCategory === cat
+                    ? "border-secondary bg-secondary text-secondary-foreground"
+                    : "border-border bg-card text-foreground hover:border-primary/50",
+                )}
               >
-                {cat === "all" ? "All" : cat}
-              </Button>
+                {cat === "all" ? "All items" : cat}
+              </button>
             ))}
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-3">
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
-            {filteredItems.map((item) => {
-              const qty = cart[item.id] ?? 0;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => addOne(item.id)}
-                  className={cn(
-                    "relative flex min-h-[72px] flex-col items-start rounded-md border border-border bg-card px-2.5 py-2 text-left transition-colors hover:border-primary/50 hover:bg-accent/30 active:bg-accent/50",
-                    qty > 0 && "border-primary bg-accent/20",
-                  )}
-                >
-                  <span className="line-clamp-2 text-sm font-medium leading-snug">
-                    {item.name}
-                  </span>
-                  <span className="mt-auto pt-1 text-xs font-semibold text-primary tabular-nums">
-                    {formatMoney(item.price)}
-                  </span>
-                  {qty > 0 ? (
-                    <span className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                      {qty}
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
+        <div className="flex-1 p-4 lg:min-h-0 lg:overflow-y-auto">
           {filteredItems.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              No items match your search.
-            </p>
-          ) : null}
+            <EmptyState
+              icon={Search}
+              title="No items match"
+              description="Try another search or category."
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              {filteredItems.map((item) => {
+                const qty = cart[item.id] ?? 0;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => adjustQty(item.id, 1)}
+                    className={cn(
+                      "group relative flex cursor-pointer flex-col overflow-hidden rounded-lg border bg-card text-left shadow-sm transition-all hover:-translate-y-px hover:border-primary/60 hover:shadow-md active:translate-y-0",
+                      qty > 0 ? "border-primary ring-1 ring-primary" : "border-border",
+                    )}
+                  >
+                    <div className="relative aspect-[4/3] w-full bg-muted">
+                      {item.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.imageUrl}
+                          alt=""
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex size-full items-center justify-center text-muted-foreground/40">
+                          <UtensilsCrossed className="size-8" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-1 flex-col p-2.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {item.categoryName}
+                      </span>
+                      <span className="mt-0.5 line-clamp-2 pr-6 text-sm font-semibold leading-snug">
+                        {item.name}
+                      </span>
+                      <span className="mt-auto flex w-full items-center justify-between pt-2">
+                        <span className="text-sm font-bold text-primary tabular-nums">
+                          {formatMoney(item.price)}
+                        </span>
+                        <span className="flex size-6 items-center justify-center rounded-full bg-accent text-accent-foreground opacity-0 transition-opacity group-hover:opacity-100">
+                          <Plus className="size-3.5" />
+                        </span>
+                      </span>
+                    </div>
+                    {qty > 0 ? (
+                      <span className="absolute right-2 top-2 flex min-w-6 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground tabular-nums">
+                        {qty}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
-      {/* Ticket */}
-      <aside className="flex min-h-[240px] shrink-0 flex-col bg-muted/20 lg:min-h-0">
-        <div className="flex items-center justify-between border-b border-border px-3 py-2">
-          <div>
+      <aside
+        id="pos-ticket"
+        className="flex shrink-0 scroll-mt-14 flex-col border-t border-border bg-card lg:min-h-0 lg:border-l lg:border-t-0"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Ticket
             </p>
-            <p className="text-sm font-medium">
-              {itemCount} item{itemCount === 1 ? "" : "s"}
+            <p className="mt-0.5 truncate text-lg font-semibold">
+              {selectedTable ? `Table ${selectedTable.label}` : "Select a table"}
             </p>
+            {selectedTable ? (
+              <p className="text-xs text-muted-foreground">
+                {selectedTable.capacity} seats
+                {busy.has(selectedTable.id) ? " · has an open order" : ""}
+              </p>
+            ) : null}
           </div>
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="h-8"
-            onClick={clearCart}
+            className="h-8 shrink-0 text-muted-foreground"
+            onClick={() => setCart({})}
             disabled={itemCount === 0}
           >
             <RotateCcw />
@@ -264,104 +340,115 @@ export function PosTerminal({ tables, menuItems }: PosTerminalProps) {
           </Button>
         </div>
 
-        <ul className="min-h-0 flex-1 divide-y divide-border overflow-y-auto">
+        <ul className="divide-y divide-border lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
           {cartLines.length === 0 ? (
-            <li className="px-3 py-8 text-center text-sm text-muted-foreground">
+            <li className="flex flex-col items-center gap-2 px-4 py-10 text-center text-sm text-muted-foreground">
+              <ReceiptText className="size-6 text-muted-foreground/60" />
               Tap menu items to build the ticket.
             </li>
           ) : (
             cartLines.map(({ item, qty }) => (
-              <li
-                key={item.id}
-                className="flex items-center gap-2 px-3 py-2"
-              >
+              <li key={item.id} className="flex items-center gap-3 px-4 py-2.5">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{item.name}</p>
                   <p className="text-xs text-muted-foreground tabular-nums">
-                    {formatMoney(item.price)}
+                    {formatMoney(item.price)} each
                   </p>
                 </div>
-                <div className="flex items-center gap-0.5">
-                  <Button
+                <div className="flex items-center rounded-md border border-border">
+                  <button
                     type="button"
-                    variant="outline"
-                    size="icon"
-                    className="size-7"
+                    className="flex size-8 cursor-pointer items-center justify-center text-muted-foreground hover:text-foreground"
                     onClick={() => adjustQty(item.id, -1)}
+                    aria-label={`Remove one ${item.name}`}
                   >
-                    <Minus className="size-3" />
-                  </Button>
-                  <span className="w-5 text-center text-sm font-semibold tabular-nums">
+                    <Minus className="size-3.5" />
+                  </button>
+                  <span className="w-6 text-center text-sm font-semibold tabular-nums">
                     {qty}
                   </span>
-                  <Button
+                  <button
                     type="button"
-                    variant="outline"
-                    size="icon"
-                    className="size-7"
+                    className="flex size-8 cursor-pointer items-center justify-center text-muted-foreground hover:text-foreground"
                     onClick={() => adjustQty(item.id, 1)}
+                    aria-label={`Add one ${item.name}`}
                   >
-                    <Plus className="size-3" />
-                  </Button>
+                    <Plus className="size-3.5" />
+                  </button>
                 </div>
-                <span className="w-14 text-right text-sm font-medium tabular-nums">
+                <span className="w-16 text-right text-sm font-semibold tabular-nums">
                   {formatMoney(item.price * qty)}
                 </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-7 shrink-0 text-destructive"
-                  onClick={() => adjustQty(item.id, -qty)}
-                >
-                  <Trash2 className="size-3" />
-                </Button>
               </li>
             ))
           )}
         </ul>
 
-        <div className="shrink-0 space-y-2 border-t border-border bg-card p-3">
+        <div className="space-y-3 border-t border-border bg-muted/30 p-4">
           <Textarea
             name="notes"
-            placeholder="Kitchen notes…"
+            placeholder="Order notes (allergies, no onions…)"
             rows={2}
-            className="min-h-[56px] resize-none text-sm"
+            className="min-h-[3.5rem] resize-none bg-card text-sm"
           />
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Total</span>
-            <span className="text-lg font-bold tabular-nums text-primary">
-              {formatMoney(subtotal)}
-            </span>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between text-muted-foreground">
+              <span>Items</span>
+              <span className="tabular-nums">{itemCount}</span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="font-medium">Total</span>
+              <span className="text-2xl font-bold text-primary tabular-nums">
+                {formatMoney(subtotal)}
+              </span>
+            </div>
           </div>
-          <Button
-            type="submit"
-            className="h-10 w-full"
-            disabled={pending || itemCount === 0 || !tableId}
-          >
+          <Button type="submit" size="lg" className="w-full" disabled={!canSend}>
             {pending ? <Loader2 className="animate-spin" /> : <Send />}
-            Send order
+            Take order
           </Button>
-          {state.message ? (
-            <p
-              className={
-                state.ok
-                  ? "text-center text-xs text-primary"
-                  : "text-center text-xs text-destructive"
-              }
-            >
+
+          {state.message && !state.ok ? (
+            <p className="text-center text-xs text-destructive">
               {state.message}
             </p>
           ) : null}
-          {lastOrderId ? (
-            <Button asChild variant="outline" size="sm" className="w-full">
-              <Link href={`/waiter/orders/${lastOrderId}`}>
-                View last order
+          {state.ok && lastOrderId ? (
+            <div className="flex items-center justify-between gap-2 rounded-md border border-primary/30 bg-accent px-3 py-2 text-sm text-accent-foreground">
+              <span className="flex items-center gap-2 font-medium">
+                <CheckCircle2 className="size-4" />
+                Order taken
+              </span>
+              <Link
+                href={`/waiter/orders/${lastOrderId}`}
+                className="text-xs font-semibold underline-offset-2 hover:underline"
+              >
+                View order
               </Link>
-            </Button>
+            </div>
           ) : null}
         </div>
       </aside>
+
+      {itemCount > 0 ? (
+        <div className="sticky bottom-0 z-20 flex items-center justify-between gap-3 border-t border-border bg-secondary px-4 py-3 text-secondary-foreground lg:hidden">
+          <div className="leading-tight">
+            <p className="text-xs text-secondary-foreground/70">
+              {itemCount} item{itemCount === 1 ? "" : "s"}
+              {selectedTable ? ` · Table ${selectedTable.label}` : ""}
+            </p>
+            <p className="text-lg font-bold tabular-nums">
+              {formatMoney(subtotal)}
+            </p>
+          </div>
+          <Button asChild size="sm">
+            <a href="#pos-ticket">
+              <ReceiptText />
+              Review ticket
+            </a>
+          </Button>
+        </div>
+      ) : null}
     </form>
   );
 }
