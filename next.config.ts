@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  /* Keep Node-native deps out of the server bundle (Vercel ESM/CJS issues). */
+  serverExternalPackages: ["firebase-admin", "mongoose"],
   experimental: {
     agentFeedback: true,
   },

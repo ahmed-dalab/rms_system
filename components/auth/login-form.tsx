@@ -17,7 +17,6 @@ import {
   SessionEstablishError,
   establishServerSession,
 } from "@/lib/auth/client-session";
-import { DB_UNAVAILABLE_CODE } from "@/lib/errors/codes";
 import { sanitizeNextPath } from "@/lib/auth/login-redirect";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loginSchema, type LoginInput } from "@/validations/auth.schema";
@@ -50,14 +49,8 @@ export function LoginForm() {
       router.refresh();
     } catch (error) {
       if (error instanceof SessionEstablishError) {
-        if (error.code === DB_UNAVAILABLE_CODE) {
-          setFormError(error.message);
-          return;
-        }
-        if (error.code === "NO_PROFILE") {
-          setFormError(error.message);
-          return;
-        }
+        setFormError(error.message);
+        return;
       }
       setFormError("Invalid email or password.");
     }
