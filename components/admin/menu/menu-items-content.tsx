@@ -2,6 +2,8 @@ import dynamic from "next/dynamic";
 
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
+import { enrichMenuItemRecords } from "@/lib/menu-item-images";
+import { requireRole } from "@/server/auth/guards";
 import { listCategories } from "@/server/db/repositories/category.repository";
 import { listMenuItems } from "@/server/db/repositories/menu-item.repository";
 
@@ -14,10 +16,14 @@ const MenuItemManager = dynamic(
 );
 
 export async function MenuItemsContent() {
-  const [items, categories] = await Promise.all([
+  await requireRole("admin");
+  const [rawItems, categories] = await Promise.all([
     listMenuItems(),
     listCategories(),
   ]);
+  const items = await enrichMenuItemRecords(rawItems, {
+    includeStorageKey: true,
+  });
 
   return (
     <AdminPageShell

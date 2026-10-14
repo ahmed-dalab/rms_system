@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
 
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
+import { requireRole } from "@/server/auth/guards";
 import { listTables } from "@/server/db/repositories/table.repository";
 
 const TableManager = dynamic(
@@ -13,6 +14,7 @@ const TableManager = dynamic(
 );
 
 export async function TablesContent() {
+  await requireRole("admin");
   const tables = await listTables();
 
   return (

@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, LogIn } from "lucide-react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -13,7 +12,12 @@ import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { establishServerSession } from "@/lib/auth/client-session";
+import { useAuth } from "@/components/auth/auth-provider";
+import {
+  SessionEstablishError,
+  establishServerSession,
+} from "@/lib/auth/client-session";
+import { DB_UNAVAILABLE_CODE } from "@/lib/errors/codes";
 import { sanitizeNextPath } from "@/lib/auth/login-redirect";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loginSchema, type LoginInput } from "@/validations/auth.schema";
@@ -21,6 +25,7 @@ import { loginSchema, type LoginInput } from "@/validations/auth.schema";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refresh } = useAuth();
   const [formError, setFormError] = useState<string | null>(null);
 
   const {
@@ -38,11 +43,22 @@ export function LoginForm() {
       const auth = getFirebaseAuth();
       await signInWithEmailAndPassword(auth, values.email, values.password);
       const portalPath = await establishServerSession();
+      await refresh();
 
       const next = sanitizeNextPath(searchParams.get("next"));
       router.replace(next ?? portalPath);
       router.refresh();
-    } catch {
+    } catch (error) {
+      if (error instanceof SessionEstablishError) {
+        if (error.code === DB_UNAVAILABLE_CODE) {
+          setFormError(error.message);
+          return;
+        }
+        if (error.code === "NO_PROFILE") {
+          setFormError(error.message);
+          return;
+        }
+      }
       setFormError("Invalid email or password.");
     }
   }
@@ -90,12 +106,6 @@ export function LoginForm() {
           Sign in
         </Button>
 
-        <p className="text-center text-xs text-muted-foreground">
-          No account?{" "}
-          <Link href="/register" className="font-medium text-primary hover:underline">
-            Register
-          </Link>
-        </p>
       </form>
     </AuthPanel>
   );

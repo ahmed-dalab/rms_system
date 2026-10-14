@@ -1,8 +1,6 @@
-import { RegisterForm } from "@/components/auth/register-form";
-import { isPublicAdminRegisterAllowed } from "@/lib/constants/register";
+import { redirect } from "next/navigation";
 
+/** Public self-registration is disabled — accounts are created by an admin. */
 export default function RegisterPage() {
-  return (
-    <RegisterForm allowAdminRegister={isPublicAdminRegisterAllowed()} />
-  );
+  redirect("/login");
 }

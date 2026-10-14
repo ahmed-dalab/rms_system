@@ -3,6 +3,7 @@
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useActionState } from "react";
 
+import { ActionMessage } from "@/components/ui/action-message";
 import { Button } from "@/components/ui/button";
 import {
   NEXT_ORDER_ACTION_LABEL,
@@ -51,8 +52,12 @@ export function OrderAdvanceButton({
         {pending ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}
         {NEXT_ORDER_ACTION_LABEL[status]}
       </Button>
-      {!state.ok && state.message ? (
-        <p className="mt-1 text-[11px] text-destructive">{state.message}</p>
+      {state.message ? (
+        <ActionMessage
+          message={state.message}
+          ok={state.ok}
+          className="mt-1 text-[11px]"
+        />
       ) : null}
     </form>
   );

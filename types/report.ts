@@ -21,6 +21,12 @@ export type DailyRevenueStat = {
   orderCount: number;
 };
 
+export type HourlyOrderStat = {
+  hour: number;
+  orderCount: number;
+  completedRevenue: number;
+};
+
 export type ReportSummary = {
   range: ReportRange;
   totalOrders: number;

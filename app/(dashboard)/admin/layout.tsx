@@ -4,7 +4,7 @@ import {
   AdminAppLayout,
   AdminAppLayoutFallback,
 } from "@/components/admin/admin-app-layout";
-import { RoleGate } from "@/components/auth/role-gate";
+import { RoleGateClient } from "@/components/auth/role-gate.client";
 
 export default function AdminSectionLayout({
   children,
@@ -13,9 +13,9 @@ export default function AdminSectionLayout({
 }) {
   return (
     <Suspense fallback={<AdminAppLayoutFallback>{children}</AdminAppLayoutFallback>}>
-      <RoleGate role="admin">
+      <RoleGateClient role="admin">
         <AdminAppLayout>{children}</AdminAppLayout>
-      </RoleGate>
+      </RoleGateClient>
     </Suspense>
   );
 }

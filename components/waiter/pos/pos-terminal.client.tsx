@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CheckCircle2,
   Loader2,
   Minus,
   Plus,
@@ -17,9 +16,12 @@ import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/layout/empty-state";
+import { SuccessBanner } from "@/components/ui/success-banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { OrderTotalsSummary } from "@/components/orders/order-totals-summary";
+import { calculateTotalWithVat } from "@/lib/constants/tax";
 import { formatMoney } from "@/lib/format/currency";
 import { cn } from "@/lib/utils";
 import {
@@ -96,6 +98,7 @@ export function PosTerminal({
     (sum, line) => sum + line.item.price * line.qty,
     0,
   );
+  const totalWithVat = calculateTotalWithVat(subtotal);
   const itemCount = cartLines.reduce((sum, line) => sum + line.qty, 0);
 
   if (state.ok && state.orderId && state.orderId !== lastOrderId) {
@@ -391,17 +394,12 @@ export function PosTerminal({
             rows={2}
             className="min-h-[3.5rem] resize-none bg-card text-sm"
           />
-          <div className="space-y-1 text-sm">
+          <div className="space-y-2 text-sm">
             <div className="flex justify-between text-muted-foreground">
               <span>Items</span>
               <span className="tabular-nums">{itemCount}</span>
             </div>
-            <div className="flex items-baseline justify-between">
-              <span className="font-medium">Total</span>
-              <span className="text-2xl font-bold text-primary tabular-nums">
-                {formatMoney(subtotal)}
-              </span>
-            </div>
+            <OrderTotalsSummary subtotal={subtotal} emphasis="pos" />
           </div>
           <Button type="submit" size="lg" className="w-full" disabled={!canSend}>
             {pending ? <Loader2 className="animate-spin" /> : <Send />}
@@ -414,18 +412,15 @@ export function PosTerminal({
             </p>
           ) : null}
           {state.ok && lastOrderId ? (
-            <div className="flex items-center justify-between gap-2 rounded-md border border-primary/30 bg-accent px-3 py-2 text-sm text-accent-foreground">
-              <span className="flex items-center gap-2 font-medium">
-                <CheckCircle2 className="size-4" />
-                Order taken
-              </span>
+            <SuccessBanner className="justify-between">
+              <span>Order taken</span>
               <Link
                 href={`/waiter/orders/${lastOrderId}`}
-                className="text-xs font-semibold underline-offset-2 hover:underline"
+                className="text-xs font-semibold text-success underline-offset-2 hover:underline"
               >
                 View order
               </Link>
-            </div>
+            </SuccessBanner>
           ) : null}
         </div>
       </aside>
@@ -438,7 +433,10 @@ export function PosTerminal({
               {selectedTable ? ` · Table ${selectedTable.label}` : ""}
             </p>
             <p className="text-lg font-bold tabular-nums">
-              {formatMoney(subtotal)}
+              {formatMoney(totalWithVat)}
+            </p>
+            <p className="text-[10px] text-secondary-foreground/70">
+              incl. 5% VAT
             </p>
           </div>
           <Button asChild size="sm">

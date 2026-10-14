@@ -23,11 +23,11 @@ Admins and waiters can both advance or cancel open orders. Only waiters create o
 
 ```
 app/
-  (auth)/              # Login & register (public)
+  (auth)/              # Login (public)
   (dashboard)/         # Role-protected areas (SSR guards)
     admin/             # Admin portal routes
     waiter/            # Waiter portal (POS + orders)
-  api/auth/            # Session, logout, register profile
+  api/auth/            # Session, logout
 components/
   admin/               # Admin UI (SSR + lazy client forms)
   orders/              # Shared order list, detail, filters
@@ -78,9 +78,7 @@ cp .env.example .env.local
 
 **MongoDB:** Local or Atlas connection string in `MONGODB_URI`.
 
-**Registration:** By default, `ALLOW_PUBLIC_ADMIN_REGISTER=false` — new sign-ups are waiters only. Set to `true` in development if you need to create an admin via `/register`.
-
-In Firebase Console, enable **Email/Password** sign-in under Authentication → Sign-in method.
+In Firebase Console, enable **Email/Password** sign-in under Authentication → Sign-in method. New staff accounts are created by an admin under **Admin → Staff** (not public registration).
 
 ### 3. Run the app
 
@@ -92,13 +90,11 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Authentication flow
 
-1. User signs in or registers with **Firebase Auth** in the browser.
+1. User signs in with **Firebase Auth** in the browser.
 2. Client sends the Firebase **ID token** to `POST /api/auth/session`.
 3. Server verifies the token with **Firebase Admin** and sets an **httpOnly session cookie**.
 4. Server Components call `getCurrentUser()` to verify the cookie and load the user **role** from MongoDB.
 5. `middleware.ts` blocks `/admin` and `/waiter` without a session cookie; nested layouts enforce admin vs waiter.
-
-Registration creates the Firebase user, then `POST /api/auth/register` stores `firebaseUid`, email, display name, and role in MongoDB. Admin role is rejected unless `ALLOW_PUBLIC_ADMIN_REGISTER=true`.
 
 ## Portal features
 

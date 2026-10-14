@@ -11,7 +11,7 @@ export function sanitizeNextPath(next: string | null | undefined): string | null
     return null;
   }
 
-  if (trimmed === AUTH_ROUTES.login || trimmed === AUTH_ROUTES.register) {
+  if (trimmed === AUTH_ROUTES.login) {
     return null;
   }
 

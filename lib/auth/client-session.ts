@@ -1,13 +1,24 @@
 "use client";
 
+import type { SessionApiResponse } from "@/lib/auth/session-types";
 import { getFirebaseAuth } from "@/lib/firebase/client";
+
+export class SessionEstablishError extends Error {
+  constructor(
+    message: string,
+    readonly code?: Extract<SessionApiResponse, { ok: false }>["code"],
+  ) {
+    super(message);
+    this.name = "SessionEstablishError";
+  }
+}
 
 /** Creates the session cookie and returns the user's portal path. */
 export async function establishServerSession(): Promise<string> {
   const auth = getFirebaseAuth();
   const user = auth.currentUser;
   if (!user) {
-    throw new Error("No signed-in Firebase user");
+    throw new SessionEstablishError("No signed-in Firebase user");
   }
 
   const idToken = await user.getIdToken(true);
@@ -17,12 +28,12 @@ export async function establishServerSession(): Promise<string> {
     body: JSON.stringify({ idToken }),
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to establish server session");
+  const body = (await response.json()) as SessionApiResponse;
+  if (!body.ok) {
+    throw new SessionEstablishError(body.error, body.code);
   }
 
-  const body = (await response.json()) as { redirectTo?: string };
-  return body.redirectTo ?? "/";
+  return body.redirectTo;
 }
 
 export async function logoutFromServer(): Promise<void> {

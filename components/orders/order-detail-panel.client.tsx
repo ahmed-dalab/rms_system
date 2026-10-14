@@ -7,12 +7,14 @@ import { useActionState, useEffect } from "react";
 
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 import { OrderStatusSteps } from "@/components/orders/order-status-steps";
+import { ActionMessage } from "@/components/ui/action-message";
 import { Button } from "@/components/ui/button";
 import {
   NEXT_ORDER_ACTION_LABEL,
   NEXT_ORDER_STATUS,
   isOrderClosed,
 } from "@/lib/constants/order-flow";
+import { OrderTotalsSummary } from "@/components/orders/order-totals-summary";
 import { formatMoney } from "@/lib/format/currency";
 import {
   cancelOrderAction,
@@ -97,11 +99,8 @@ export function OrderDetailPanel({
                 </li>
               ))}
             </ul>
-            <footer className="flex items-baseline justify-between border-t border-border bg-muted/40 px-4 py-3">
-              <span className="text-sm font-medium">Total</span>
-              <span className="text-xl font-bold text-primary tabular-nums">
-                {formatMoney(order.subtotal)}
-              </span>
+            <footer className="border-t border-border bg-muted/40 px-4 py-3">
+              <OrderTotalsSummary subtotal={order.subtotal} />
             </footer>
           </section>
 
@@ -185,15 +184,12 @@ export function OrderDetailPanel({
           ) : null}
 
           {message ? (
-            <p
-              className={
-                messageOk
-                  ? "text-center text-sm text-primary"
-                  : "text-center text-sm text-destructive"
-              }
-            >
-              {message}
-            </p>
+            <ActionMessage
+              message={message}
+              ok={messageOk}
+              size="sm"
+              className="text-center"
+            />
           ) : null}
         </aside>
       </div>

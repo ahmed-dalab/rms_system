@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
 
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
+import { requireRole } from "@/server/auth/guards";
 import { listStaffMembers } from "@/server/db/repositories/user.repository";
 
 const StaffManager = dynamic(
@@ -13,6 +14,7 @@ const StaffManager = dynamic(
 );
 
 export async function StaffContent() {
+  await requireRole("admin");
   const staff = await listStaffMembers();
 
   return (

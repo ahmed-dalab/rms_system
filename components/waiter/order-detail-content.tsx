@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { WaiterPageShell } from "@/components/waiter/waiter-page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
+import { requireRole } from "@/server/auth/guards";
 import { findOrderById } from "@/server/db/repositories/order.repository";
 
 const OrderDetailPanel = dynamic(
@@ -20,6 +21,7 @@ type OrderDetailContentProps = {
 };
 
 export async function OrderDetailContent({ orderId }: OrderDetailContentProps) {
+  await requireRole("waiter");
   const order = await findOrderById(orderId);
   if (!order) {
     notFound();

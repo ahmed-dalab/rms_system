@@ -6,6 +6,7 @@ import {
   withApiHandler,
 } from "@/server/api/handler";
 import { requireApiAdmin } from "@/server/api/guards";
+import { enrichMenuItemRecord } from "@/lib/menu-item-images";
 import {
   categoryExists,
   deleteMenuItem,
@@ -27,7 +28,9 @@ export async function GET(_request: Request, context: RouteContext) {
     if (!item) {
       throw new ApiError(404, "Menu item not found");
     }
-    return jsonData(item);
+    return jsonData(
+      await enrichMenuItemRecord(item, { includeStorageKey: true }),
+    );
   });
 }
 
@@ -60,7 +63,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!item) {
       throw new ApiError(404, "Menu item not found");
     }
-    return jsonData(item);
+    return jsonData(
+      await enrichMenuItemRecord(item, { includeStorageKey: true }),
+    );
   });
 }
 

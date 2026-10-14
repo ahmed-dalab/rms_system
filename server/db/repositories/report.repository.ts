@@ -3,6 +3,7 @@ import { withDb } from "@/server/db/with-db";
 import type { OrderStatus } from "@/types/order";
 import type {
   DailyRevenueStat,
+  HourlyOrderStat,
   ReportRange,
   ReportSummary,
   StatusCount,
@@ -134,6 +135,46 @@ export async function getReportSummary(
       topItems,
       dailyRevenue,
     };
+  });
+}
+
+/** Orders created today, grouped by hour (server local timezone). */
+export async function getTodayHourlyStats(): Promise<HourlyOrderStat[]> {
+  return withDb(async () => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+
+    const rows = await OrderModel.aggregate<{
+      _id: number;
+      orderCount: number;
+      completedRevenue: number;
+    }>([
+      { $match: { createdAt: { $gte: start } } },
+      {
+        $group: {
+          _id: { $hour: "$createdAt" },
+          orderCount: { $sum: 1 },
+          completedRevenue: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "paid"] }, "$subtotal", 0],
+            },
+          },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const byHour = new Map(rows.map((r) => [r._id, r]));
+    const stats: HourlyOrderStat[] = [];
+    for (let hour = 0; hour < 24; hour++) {
+      const row = byHour.get(hour);
+      stats.push({
+        hour,
+        orderCount: row?.orderCount ?? 0,
+        completedRevenue: row?.completedRevenue ?? 0,
+      });
+    }
+    return stats;
   });
 }
 

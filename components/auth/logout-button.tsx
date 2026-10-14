@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signOut } from "firebase/auth";
 
+import { useAuth } from "@/components/auth/auth-provider";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { logoutFromServer } from "@/lib/auth/client-session";
 import { getFirebaseAuth } from "@/lib/firebase/client";
@@ -19,6 +20,7 @@ export function LogoutButton({
   className,
 }: LogoutButtonProps) {
   const router = useRouter();
+  const { refresh } = useAuth();
   const [loading, setLoading] = useState(false);
 
   async function handleLogout() {
@@ -26,6 +28,7 @@ export function LogoutButton({
     try {
       await logoutFromServer();
       await signOut(getFirebaseAuth());
+      await refresh();
       router.push("/login");
       router.refresh();
     } finally {

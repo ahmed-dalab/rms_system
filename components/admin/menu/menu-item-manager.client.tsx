@@ -304,7 +304,8 @@ function MenuItemFormFields({
     <>
       <MenuItemImageField
         idPrefix={idPrefix}
-        defaultUrl={defaults?.imageUrl}
+        defaultStorageKey={defaults?.imageStorageKey ?? null}
+        defaultPreviewUrl={defaults?.imageUrl}
         disabled={disabled}
       />
       <div className="space-y-2">
@@ -398,7 +399,7 @@ function FormFooter({
         </Button>
       </div>
       {message ? (
-        <p className={ok ? "text-xs text-primary" : "text-xs text-destructive"}>
+        <p className={ok ? "text-xs text-success" : "text-xs text-destructive"}>
           {message}
         </p>
       ) : null}

@@ -11,18 +11,24 @@ const ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 
 type MenuItemImageFieldProps = {
   idPrefix: string;
-  defaultUrl?: string | null;
+  /** Value saved to MongoDB (storage path or external URL). */
+  defaultStorageKey?: string | null;
+  /** Resolved URL for preview when editing. */
+  defaultPreviewUrl?: string | null;
   disabled?: boolean;
 };
 
 export function MenuItemImageField({
   idPrefix,
-  defaultUrl = null,
+  defaultStorageKey = null,
+  defaultPreviewUrl = null,
   disabled,
 }: MenuItemImageFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [imageUrl, setImageUrl] = useState(defaultUrl ?? "");
-  const [preview, setPreview] = useState<string | null>(defaultUrl);
+  const [storageKey, setStorageKey] = useState(defaultStorageKey ?? "");
+  const [preview, setPreview] = useState<string | null>(
+    defaultPreviewUrl ?? defaultStorageKey,
+  );
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,21 +50,22 @@ export function MenuItemImageField({
         body,
       });
       const json = (await response.json()) as {
-        data?: { url: string };
+        data?: { path: string; url: string };
         error?: string;
       };
       if (!response.ok) {
         throw new Error(json.error ?? "Upload failed");
       }
+      const path = json.data?.path;
       const url = json.data?.url;
-      if (!url) {
+      if (!path || !url) {
         throw new Error("Upload failed");
       }
-      setImageUrl(url);
+      setStorageKey(path);
       setPreview(url);
     } catch (err) {
-      setPreview(defaultUrl);
-      setImageUrl(defaultUrl ?? "");
+      setPreview(defaultPreviewUrl ?? defaultStorageKey);
+      setStorageKey(defaultStorageKey ?? "");
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
@@ -67,7 +74,7 @@ export function MenuItemImageField({
   }
 
   function clearImage() {
-    setImageUrl("");
+    setStorageKey("");
     setPreview(null);
     setError(null);
     if (inputRef.current) {
@@ -78,7 +85,7 @@ export function MenuItemImageField({
   return (
     <div className="space-y-2">
       <Label htmlFor={`${idPrefix}-image`}>Photo</Label>
-      <input type="hidden" name="imageUrl" value={imageUrl} readOnly />
+      <input type="hidden" name="imageUrl" value={storageKey} readOnly />
       <div className="flex gap-3">
         <div
           className={cn(
@@ -87,7 +94,7 @@ export function MenuItemImageField({
           )}
         >
           {preview ? (
-            // eslint-disable-next-line @next/next/no-img-element -- Firebase signed URLs
+            // eslint-disable-next-line @next/next/no-img-element -- signed Supabase URLs
             <img
               src={preview}
               alt=""
@@ -116,7 +123,7 @@ export function MenuItemImageField({
             }}
           />
           <p className="text-xs text-muted-foreground">
-            JPEG, PNG, WebP, or GIF · max 5 MB. Stored in Firebase Storage.
+            JPEG, PNG, WebP, or GIF · max 5 MB. Stored in Supabase Storage.
           </p>
           {preview ? (
             <Button

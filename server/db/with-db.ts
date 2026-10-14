@@ -1,3 +1,4 @@
+import { wrapMongoError } from "@/lib/errors/database";
 import { connectMongo } from "@/lib/mongodb/client";
 
 /**
@@ -5,6 +6,10 @@ import { connectMongo } from "@/lib/mongodb/client";
  * Connection is cached globally — safe to call on every request.
  */
 export async function withDb<T>(operation: () => Promise<T>): Promise<T> {
-  await connectMongo();
-  return operation();
+  try {
+    await connectMongo();
+    return await operation();
+  } catch (error) {
+    throw wrapMongoError(error);
+  }
 }

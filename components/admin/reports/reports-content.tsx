@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { ReportsDashboard } from "@/components/admin/reports/reports-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { requireRole } from "@/server/auth/guards";
 import { getReportSummary } from "@/server/db/repositories/report.repository";
 import { reportRangeSchema } from "@/validations/report.schema";
 import type { ReportRange } from "@/types/report";
@@ -21,6 +22,7 @@ type ReportsContentProps = {
 };
 
 export async function ReportsContent({ rangeParam }: ReportsContentProps) {
+  await requireRole("admin");
   const parsed = reportRangeSchema.safeParse(rangeParam ?? "7d");
   const range: ReportRange = parsed.success ? parsed.data : "7d";
   const summary = await getReportSummary(range);

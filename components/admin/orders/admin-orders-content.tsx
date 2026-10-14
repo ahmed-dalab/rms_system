@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { OrdersList } from "@/components/orders/orders-list";
 import { Skeleton } from "@/components/ui/skeleton";
+import { requireRole } from "@/server/auth/guards";
 import { listOrders } from "@/server/db/repositories/order.repository";
 
 const OrdersFilter = dynamic(
@@ -21,6 +22,7 @@ type AdminOrdersContentProps = {
 export async function AdminOrdersContent({
   filterParam,
 }: AdminOrdersContentProps) {
+  await requireRole("admin");
   const activeOnly = filterParam !== "all";
   const orders = await listOrders({ activeOnly });
 

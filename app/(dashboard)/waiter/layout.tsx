@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { RoleGate } from "@/components/auth/role-gate";
+import { RoleGateClient } from "@/components/auth/role-gate.client";
 import {
   WaiterAppLayout,
   WaiterAppLayoutFallback,
@@ -12,10 +12,10 @@ export default function WaiterSectionLayout({
   children: React.ReactNode;
 }) {
   return (
-    <RoleGate role="waiter">
+    <RoleGateClient role="waiter">
       <Suspense fallback={<WaiterAppLayoutFallback>{children}</WaiterAppLayoutFallback>}>
         <WaiterAppLayout>{children}</WaiterAppLayout>
       </Suspense>
-    </RoleGate>
+    </RoleGateClient>
   );
 }

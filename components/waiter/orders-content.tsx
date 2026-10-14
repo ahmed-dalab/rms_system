@@ -8,6 +8,7 @@ import { OrderCard } from "@/components/orders/order-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WaiterPageShell } from "@/components/waiter/waiter-page-shell";
+import { requireRole } from "@/server/auth/guards";
 import { listOrders } from "@/server/db/repositories/order.repository";
 
 const OrdersFilter = dynamic(
@@ -23,6 +24,7 @@ type OrdersContentProps = {
 };
 
 export async function OrdersContent({ filterParam }: OrdersContentProps) {
+  await requireRole("waiter");
   const showAll = filterParam === "all";
   const orders = await listOrders({ activeOnly: !showAll });
   const visibleOrders = showAll

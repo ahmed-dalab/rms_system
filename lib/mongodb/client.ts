@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+import { wrapMongoError } from "@/lib/errors/database";
+
 function getMongoUri(): string {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
@@ -34,9 +36,18 @@ export async function connectMongo(): Promise<typeof mongoose> {
   if (!cached.promise) {
     cached.promise = mongoose.connect(getMongoUri(), {
       bufferCommands: false,
+      serverSelectionTimeoutMS: 5_000,
+      connectTimeoutMS: 5_000,
+      socketTimeoutMS: 10_000,
     });
   }
 
-  cached.conn = await cached.promise;
-  return cached.conn;
+  try {
+    cached.conn = await cached.promise;
+    return cached.conn;
+  } catch (error) {
+    cached.promise = null;
+    cached.conn = null;
+    throw wrapMongoError(error);
+  }
 }

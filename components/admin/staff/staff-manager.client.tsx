@@ -62,7 +62,7 @@ export function StaffManager({ staff }: StaffManagerProps) {
         </p>
         <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
           <Plus />
-          Add waiter
+          Add Staff
         </Button>
       </PageToolbar>
 
@@ -72,7 +72,7 @@ export function StaffManager({ staff }: StaffManagerProps) {
           description="Create waiter accounts with email and password. They can sign in immediately."
           action={
             <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
-              Add waiter
+              Add Staff
             </Button>
           }
         />
@@ -104,14 +104,14 @@ export function StaffManager({ staff }: StaffManagerProps) {
       <Modal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        title="Add waiter"
-        description="Creates Firebase sign-in and a waiter profile in MongoDB."
+        title="Add Staff"
+        description="Creates Firebase sign-in and a staff profile in MongoDB."
       >
         <form action={createFormAction} className="space-y-4">
           <WaiterFormFields idPrefix="create" includePassword requiredPassword />
           <FormFooter
             pending={createPending}
-            submitLabel="Create waiter"
+            submitLabel="Create Staff"
             onCancel={() => setCreateOpen(false)}
             message={createState.message}
             ok={createState.ok}
@@ -218,7 +218,7 @@ function EditWaiterModal({
     <Modal
       open
       onClose={onClose}
-      title="Edit waiter"
+      title="Edit Staff"
       description={member.email}
     >
       <form action={updateFormAction} className="space-y-4">
@@ -318,7 +318,7 @@ function FormFooter({
         </Button>
       </div>
       {message ? (
-        <p className={ok ? "text-xs text-primary" : "text-xs text-destructive"}>
+        <p className={ok ? "text-xs text-success" : "text-xs text-destructive"}>
           {message}
         </p>
       ) : null}

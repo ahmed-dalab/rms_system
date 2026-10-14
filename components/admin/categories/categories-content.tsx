@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
 
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
+import { requireRole } from "@/server/auth/guards";
 import { listCategories } from "@/server/db/repositories/category.repository";
 
 const CategoryManager = dynamic(
@@ -15,6 +16,7 @@ const CategoryManager = dynamic(
 );
 
 export async function CategoriesContent() {
+  await requireRole("admin");
   const categories = await listCategories();
 
   return (

@@ -5,6 +5,7 @@ import {
   withApiHandler,
 } from "@/server/api/handler";
 import { requireApiAdmin, requireApiUser } from "@/server/api/guards";
+import { enrichMenuItemRecord, enrichMenuItemRecords } from "@/lib/menu-item-images";
 import {
   categoryExists,
   createMenuItem,
@@ -24,7 +25,10 @@ export async function GET(request: Request) {
     const items = availableOnly
       ? await listAvailableMenuItems()
       : await listMenuItems();
-    return jsonData(items);
+    const enriched = await enrichMenuItemRecords(items, {
+      includeStorageKey: user.role === "admin",
+    });
+    return jsonData(enriched);
   });
 }
 
@@ -47,6 +51,7 @@ export async function POST(request: Request) {
       isAvailable: body.isAvailable,
       imageUrl: body.imageUrl?.trim() ? body.imageUrl.trim() : null,
     });
-    return jsonData(item, { status: 201 });
+    const enriched = await enrichMenuItemRecord(item, { includeStorageKey: true });
+    return jsonData(enriched, { status: 201 });
   });
 }

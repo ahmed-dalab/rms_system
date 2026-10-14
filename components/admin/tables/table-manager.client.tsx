@@ -268,7 +268,7 @@ function TableFormFooter({
         </Button>
       </div>
       {message ? (
-        <p className={ok ? "text-xs text-primary" : "text-xs text-destructive"}>
+        <p className={ok ? "text-xs text-success" : "text-xs text-destructive"}>
           {message}
         </p>
       ) : null}

@@ -1,6 +1,8 @@
 import dynamic from "next/dynamic";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { enrichMenuItemRecords } from "@/lib/menu-item-images";
+import { requireRole } from "@/server/auth/guards";
 import { listAvailableMenuItems } from "@/server/db/repositories/menu-item.repository";
 import { listOrders } from "@/server/db/repositories/order.repository";
 import { listActiveTables } from "@/server/db/repositories/table.repository";
@@ -40,11 +42,13 @@ const PosTerminal = dynamic(
 );
 
 export async function PosContent() {
-  const [tables, menuItems, activeOrders] = await Promise.all([
+  await requireRole("waiter");
+  const [tables, rawMenuItems, activeOrders] = await Promise.all([
     listActiveTables(),
     listAvailableMenuItems(),
     listOrders({ activeOnly: true }),
   ]);
+  const menuItems = await enrichMenuItemRecords(rawMenuItems);
 
   const busyTableIds = Array.from(
     new Set(activeOrders.map((order) => order.tableId)),

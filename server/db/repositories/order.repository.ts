@@ -55,6 +55,18 @@ const populateConfig = [
   },
 ];
 
+export async function listRecentOrders(limit = 10): Promise<OrderRecord[]> {
+  return withDb(async () => {
+    const docs = await OrderModel.find()
+      .populate(populateConfig)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean<PopulatedOrder[]>();
+
+    return docs.map(toOrderRecord);
+  });
+}
+
 export async function listOrders(options?: {
   activeOnly?: boolean;
 }): Promise<OrderRecord[]> {

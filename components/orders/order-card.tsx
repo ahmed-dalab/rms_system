@@ -4,6 +4,7 @@ import { ElapsedTime } from "@/components/orders/elapsed-time.client";
 import { OrderAdvanceButton } from "@/components/orders/order-advance-button.client";
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 import { isOrderClosed } from "@/lib/constants/order-flow";
+import { calculateTotalWithVat } from "@/lib/constants/tax";
 import { formatMoney } from "@/lib/format/currency";
 import type { OrderRecord } from "@/types/order";
 
@@ -70,9 +71,12 @@ export function OrderCard({ order, detailHref, showStatus }: OrderCardProps) {
       </Link>
 
       <div className="mt-auto flex items-center justify-between gap-2 border-t border-border px-4 py-2.5">
-        <span className="text-sm font-bold tabular-nums">
-          {formatMoney(order.subtotal)}
-        </span>
+        <div className="leading-tight">
+          <span className="text-sm font-bold tabular-nums">
+            {formatMoney(calculateTotalWithVat(order.subtotal))}
+          </span>
+          <p className="text-[10px] text-muted-foreground">incl. 5% VAT</p>
+        </div>
         {closed ? (
           <span className="text-xs text-muted-foreground">
             {new Date(order.updatedAt).toLocaleString()}
